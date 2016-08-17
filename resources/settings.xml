@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="GENERAL">
+        <setting label="HOST URL" type="text" id="base-url" default="http://example.com:8989"/>
+        <setting label="API KEY" type="text" id="api-key" default=""/>
+    </category>
+</settings>
