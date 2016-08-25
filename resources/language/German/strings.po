@@ -18,8 +18,12 @@ msgstr ""
 
 
 msgctxt "#30005"
-msgid "Shows"
+msgid "Serien"
 msgstr "Shows"
+
+msgctxt "#30009"
+msgid "Serie hinzufügen"
+msgstr "Add Show"
 
 msgctxt "#30020"
 msgid "Season "
@@ -47,6 +51,10 @@ msgctxt "#30113"
 msgid "Staffel"
 msgstr "Season"
 
+msgctxt "#30114"
+msgid "Episode"
+msgstr "Episode"
+
 msgctxt "#30121"
 msgid "Host URL"
 msgstr "Host URL"
@@ -66,3 +74,18 @@ msgstr "Show total season episodes in season name"
 msgctxt "#30133"
 msgid "Zeige Monitor Status im Namen"
 msgstr "Show monitor state in name"
+
+msgctxt "#30141"
+msgid "Zeige Air Date im Episoden Namen"
+msgstr "Show air date in episode name"
+
+#dialogs
+#30200
+
+msgctxt "#30210"
+msgid "Ergebnisse:"
+msgstr "Results:"
+
+msgctxt "#30211"
+msgid "Wähle Qualität:"
+msgstr "Choose quality:"
