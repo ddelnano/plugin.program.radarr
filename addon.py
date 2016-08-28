@@ -132,7 +132,8 @@ def list_seasons(show_id):
         addDir(name, show_id, 'getSeason', '', '', '', '', season_id)
 
 
-def list_season(show_id, season_id):
+def list_season(show_id):
+    season_id = xbmc.getInfoLabel("ListItem.Season")
     dir_show = get_appended_path(dir_shows, str(show_id))
     file_db = get_appended_path(dir_show, 'episodes.json')
     data = read_json(file_db)
@@ -208,12 +209,12 @@ def get_all_episodes(show_id):
 
 def addDir(name, url, mode, iconimage, fanart, extra1, desc='', season='', date=''):
     u = sys.argv[0] + "?url=" + str(url) + "&mode=" + str(mode) + "&name=" + str(name)# + "&extra1=" + extra1
-    if season != '':
-        u += "&season=" + str(season)
     ok = True
     item = xbmcgui.ListItem(name)
     if date != '':
         item.setInfo(type="video", infoLabels={"aired": date})
+    if season != '':
+        item.setInfo(type="video", infoLabels={"season": season})
     item.setInfo(type="video", infoLabels={"title": name})
     item.setArt({'thumb': iconimage, 'fanart': fanart})
     xbmcplugin.addDirectoryItem(handle=pluginhandle, url=u, listitem=item, isFolder=True)
@@ -250,7 +251,7 @@ if mode == 'getAllShows':
 elif mode == 'getShow':
     get_show(url)
 elif mode == 'getSeason':
-    list_season(url, season)
+    list_season(url)
 elif mode == 'addShow':
     add_show(url)
 else:
