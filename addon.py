@@ -153,7 +153,7 @@ def get_episode_name(episode):
         name += ' [COLOR FFF7290A]%s[/COLOR] ' % episode['title']
     if vw_aired and 'airDate' in episode:
         name += (' [COLOR FF494545]%s[/COLOR]' % episode['airDate'])
-    return name
+    return name.encode('utf-8')
 
 
 def get_season_name(season):
