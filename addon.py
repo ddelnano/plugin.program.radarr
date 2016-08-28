@@ -119,20 +119,23 @@ def list_shows(data):
         file = 'seasons.json'
         file_path = get_appended_path(dir_show, file)
         write_json(file_path, seasons)
-        addDir(name, show_id, 'getShow', thumb, fanart, '')
+        addDir(name, show_id, 'getShow', thumb, fanart, '', show_id)
 
 
 def list_seasons(show_id):
+    #show_id = xbmc.getInfoLabel("ListItem.tvshowtitle")
     dir_show = get_appended_path(dir_shows, str(show_id))
     file_db = get_appended_path(dir_show, 'seasons.json')
     data = read_json(file_db)
+    #show_id = xbmc.getInfoLabel("ListItem.tvshowtitle")
     for season in data:
         name = get_season_name(season)
         season_id = season['seasonNumber']
-        addDir(name, show_id, 'getSeason', '', '', '', '', season_id)
+        addDir(name, '', 'getSeason', '', '', '', show_id, season_id)
 
 
-def list_season(show_id):
+def list_season():
+    show_id = xbmc.getInfoLabel("ListItem.tvshowtitle")
     season_id = xbmc.getInfoLabel("ListItem.Season")
     dir_show = get_appended_path(dir_shows, str(show_id))
     file_db = get_appended_path(dir_show, 'episodes.json')
@@ -142,7 +145,8 @@ def list_season(show_id):
             continue
         else:
             name = get_episode_name(episode)
-            addDir(name, '', '', '', '', '', '', '', '')
+            episode = episode['episodeNumber']
+            addDir(name, '', '', '', '', '', show_id, '', episode)
 
 
 def get_episode_name(episode):
@@ -188,6 +192,12 @@ def get_season_name(season):
     return name
 
 
+def toggle_monitored():
+    season_id = xbmc.getInfoLabel("ListItem.Season")
+
+
+
+
 def get_show(show_id):
     list_seasons(show_id)
     get_all_episodes(show_id)
@@ -207,12 +217,14 @@ def get_all_episodes(show_id):
 
 
 
-def addDir(name, url, mode, iconimage, fanart, extra1, desc='', season='', date=''):
+def addDir(name, url, mode, iconimage, fanart, extra1, show='', season='', episode=''):
     u = sys.argv[0] + "?url=" + str(url) + "&mode=" + str(mode) + "&name=" + str(name)# + "&extra1=" + extra1
     ok = True
     item = xbmcgui.ListItem(name)
-    if date != '':
-        item.setInfo(type="video", infoLabels={"aired": date})
+    if show != '':
+        item.setInfo(type="video", infoLabels={"tvshowtitle": show})
+    if episode != '':
+        item.setInfo(type="video", infoLabels={"episode": episode})
     if season != '':
         item.setInfo(type="video", infoLabels={"season": season})
     item.setInfo(type="video", infoLabels={"title": name})
@@ -251,7 +263,7 @@ if mode == 'getAllShows':
 elif mode == 'getShow':
     get_show(url)
 elif mode == 'getSeason':
-    list_season(url)
+    list_season()
 elif mode == 'addShow':
     add_show(url)
 else:
