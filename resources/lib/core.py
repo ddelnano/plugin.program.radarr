@@ -6,7 +6,7 @@ import xbmc, xbmcaddon, xbmcgui, xbmcplugin
 from resources.lib.sonarr_api import SonarrAPI
 from resources.lib.listing import add_entries, parameters_string_to_dict
 from resources.lib._json import write_json, read_json, get_appended_path,\
-    dir_db, dir_shows
+     dir_db, dir_shows
 
 addonID = "plugin.program.sonarr"
 addon = xbmcaddon.Addon(id=addonID)
@@ -14,11 +14,10 @@ fanart = ''
 pluginhandle = int(sys.argv[1])
 loglevel = 1
 log_msg = addonID + ' - '
-
+TRANSLATE = addon.getLocalizedString
 
 base_url = addon.getSetting('base-url')
 api_key = addon.getSetting('api-key')
-
 
 vw_moni, vw_perc, vw_total = False, False, False
 vw_aired = False
@@ -35,22 +34,16 @@ snr = SonarrAPI(host_url, api_key)
 
 
 def root():
-    mall_shows = {'name': get_translation(30005), 'mode': 'getAllShows', 'type': 'dir'}
-    madd_show = {'name': get_translation(30009), 'mode': 'addShow', 'type': 'dir'}
+    mall_shows = {'name': TRANSLATE(30005), 'mode': 'getAllShows', 'type': 'dir'}
+    madd_show = {'name': TRANSLATE(30009), 'mode': 'addShow', 'type': 'dir'}
     main = [mall_shows, madd_show]
     add_entries(main)
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
-
 def add_show(term=None):
-    xbmc.log('term')
-    xbmc.log(str(term))
-    if not term:
-        kb = xbmc.Keyboard()
-        kb.doModal()
-        if kb.isConfirmed() and kb.getText():
-            term = kb.getText()
+    dialog = xbmcgui.Dialog()
+    term = dialog.input('Add Show', type=xbmcgui.INPUT_ALPHANUM)
     # if user cancels, return
     if not term:
         return -1
@@ -64,7 +57,7 @@ def add_show(term=None):
         return -1
     # open dialog for choosing show
     dialog = xbmcgui.Dialog()
-    ret = dialog.select(get_translation(30210), shows)
+    ret = dialog.select(TRANSLATE(30210), shows)
     if ret == -1:
         return -1
     xbmc.log('RET', level=0)
@@ -102,15 +95,11 @@ def list_quality_profiles():
     for profile in profiles:
         profiles_key_list.append(profile['name'])
     dialog = xbmcgui.Dialog()
-    ret = dialog.select(get_translation(30211), profiles_key_list)
+    ret = dialog.select(TRANSLATE(30211), profiles_key_list)
     if ret == -1:
         return -1
     id = profiles[ret]['id']
     return id
-
-
-def add_new_show():
-    return True
 
 
 def list_shows(data):
@@ -118,7 +107,7 @@ def list_shows(data):
     for show in data:
         name = show['title'].encode('utf-8')
         thumb = host_url + show['images'][2]['url'] + '&apikey={}'.format(api_key)
-        banner = host_url + show['images'][1]['url'] + '&apikey={}'.format(api_key)
+        #banner = host_url + show['images'][1]['url'] + '&apikey={}'.format(api_key)
         fanart = host_url + show['images'][0]['url'] + '&apikey={}'.format(api_key)
         show_id = show['id']
         seasons = show['seasons']
@@ -185,7 +174,7 @@ def get_episode_name(episode):
 
 def get_season_name(season):
     season_id = season['seasonNumber']
-    name = get_translation(30020)
+    name = TRANSLATE(30020)
     name += str(season_id).zfill(2)
     # Get percentage
     if vw_perc:
@@ -206,16 +195,18 @@ def get_season_name(season):
     if vw_moni:
         xbmc.log('VW MONI TRUE')
         if season['monitored'] == 'false':
-            name += '[COLOR FF494545]%s[/COLOR]' % get_translation(30025)
+            name += '[COLOR FF494545]%s[/COLOR]' % TRANSLATE(30025)
         else:
-            name += '[COLOR FF494545]%s[/COLOR]' % get_translation(30026)
+            name += '[COLOR FF494545]%s[/COLOR]' % TRANSLATE(30026)
     else:
         xbmc.log('VW MONI FALSE')
     return name
 
-
+'''
 def toggle_monitored():
+    # TODO ?
     season_id = xbmc.getInfoLabel("ListItem.Season")
+'''
 
 
 def get_show(show_id):
@@ -225,7 +216,7 @@ def get_show(show_id):
 
 def get_all_shows():
     data = snr.get_series()
-    ord_data = sorted(data, key=lambda k: k['title'])   # order title alphabetically
+    ord_data = sorted(data, key=lambda k: k['title'])   # order titles alphabetically
     list_shows(ord_data)
 
 
@@ -234,10 +225,6 @@ def get_all_episodes(show_id):
     dir_show = get_appended_path(dir_shows, str(show_id))
     file_db = get_appended_path(dir_show, 'episodes.json')
     write_json(file_db, data)
-
-
-def get_translation(string_id):
-    return addon.getLocalizedString(string_id)
 
 
 params = parameters_string_to_dict(sys.argv[2])
@@ -249,7 +236,8 @@ if type(url) == type(str()):
     url = str(url)
 
 
-
+if mode == None:
+    root()
 if mode == 'getAllShows':
     get_all_shows()
 elif mode == 'getShow':
@@ -258,5 +246,3 @@ elif mode == 'getSeason':
     list_season(url, season)
 elif mode == 'addShow':
     add_show(url)
-else:
-    root()
