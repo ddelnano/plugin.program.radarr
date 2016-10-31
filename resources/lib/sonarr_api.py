@@ -146,21 +146,17 @@ class SonarrAPI:
         res = self.request_del("{}/series/{}".format(self.host_url, series_id), data)
         return res.json()
 
-
     # ENDPOINT SERIES LOOKUP
     def lookup_series(self, query):
         """Searches for new shows on trakt"""
         res = self.request_get("{}/series/lookup?term={}".format(self.host_url, query))
         return res.json()
 
-
     # ENDPOINT SYSTEM-STATUS
     def get_system_status(self):
         """Returns the System Status"""
         res = self.request_get("{}/system/status".format(self.host_url))
         return res.json()
-
-
 
     # REQUESTS STUFF
     def request_get(self, url, data={}):
