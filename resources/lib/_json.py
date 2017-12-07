@@ -3,14 +3,14 @@ import io
 import json
 import xbmc, xbmcvfs, xbmcaddon
 
-addonID = "plugin.program.sonarr"
+addonID = "plugin.program.radarr"
 addon = xbmcaddon.Addon(id=addonID)
 dir_userdata = xbmc.translatePath(addon.getAddonInfo('profile'))
 dir_db = os.path.join(dir_userdata, 'db')
-dir_shows = os.path.join(dir_db, 'shows')
-#dir_seasons = os.path.join(dir_shows, 'seasons')
-#dir_episodes = os.path.join(dir_shows, 'episodes')
-#file_shows = os.path.join(dir_db, 'shows.json')
+dir_movies = os.path.join(dir_db, 'movies')
+#dir_seasons = os.path.join(dir_movie, 'seasons')
+#dir_episodes = os.path.join(dir_movie, 'episodes')
+#file_movie = os.path.join(dir_db, 'movie.json')
 
 log_msg = addonID + ' - _json_lib -'
 

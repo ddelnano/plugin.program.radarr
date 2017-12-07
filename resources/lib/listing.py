@@ -15,6 +15,7 @@ def add_entries(entries_list):
         entry_name = entry['name']
         item = xbmcgui.ListItem(entry_name)
         item.setArt(entry.get('images'))
+        item.addContextMenuItems([('Remove', 'plugin://plugin.program.radarr/?mode=getQueue&name=Show%20Currently%20Downloading%20Status&type=dir)',)])
         entry_url = get_entry_url(entry)
         infolabels = entry.get('infoLabels')
         if entry['type'] == 'video':

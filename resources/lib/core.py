@@ -2,13 +2,14 @@
 import sys
 import requests
 import xbmc, xbmcaddon, xbmcgui, xbmcplugin
+import time
 
-from resources.lib.sonarr_api import SonarrAPI
+from resources.lib.radarr_api import RadarrAPI
 from resources.lib.listing import add_entries, parameters_string_to_dict
 from resources.lib._json import write_json, read_json, get_appended_path,\
-     dir_db, dir_shows
+     dir_db, dir_movies
 
-addonID = "plugin.program.sonarr"
+addonID = "plugin.program.radarr"
 addon = xbmcaddon.Addon(id=addonID)
 fanart = ''
 pluginhandle = int(sys.argv[1])
@@ -18,42 +19,46 @@ TRANSLATE = addon.getLocalizedString
 
 base_url = addon.getSetting('base-url')
 api_key = addon.getSetting('api-key')
+addonicon = addon.getAddonInfo('path').decode('utf-8') + '/icon.png'
+addonfanart = addon.getAddonInfo('path').decode('utf-8') + '/fanart.jpg'
+xbmc.log("ICON " + str(addonicon))
 
-vw_moni, vw_perc, vw_total = False, False, False
-vw_aired = False
-if addon.getSetting('view-moni') == 'true': vw_moni = True
-if addon.getSetting('view-perc') == 'true': vw_perc = True
-if addon.getSetting('view-total') == 'true': vw_total = True
-if addon.getSetting('view-aired') == 'true': vw_aired = True
+
+vw_miss = False
+if addon.getSetting('view-miss') == 'true': vw_miss = True
 
 if not base_url.endswith('/'):
     base_url += '/'
 host_url = base_url + 'api'
 
-snr = SonarrAPI(host_url, api_key)
+snr = RadarrAPI(host_url, api_key)
 
 
 def root():
-    mall_shows = {'name': TRANSLATE(30005), 'mode': 'getAllShows', 'type': 'dir'}
-    madd_show = {'name': TRANSLATE(30009), 'mode': 'addShow', 'type': 'dir'}
-    main = [mall_shows, madd_show]
+    mall_movies = {'name': TRANSLATE(30005), 'mode': 'getAllMovies', 'type': 'dir', 'images': {'thumb': addonicon, 'fanart': addonfanart}}
+    madd_movie = {'name': TRANSLATE(30009), 'mode': 'addMovie', 'type': 'dir', 'images': {'thumb': addonicon, 'fanart': addonfanart}}
+    msearch_missing = {'name': TRANSLATE(30010), 'mode': 'searchMissing', 'type': 'dir', 'images': {'thumb': addonicon, 'fanart': addonfanart}}
+    mget_queue = {'name': TRANSLATE(30011), 'mode': 'getQueue', 'type': 'dir', 'images': {'thumb': addonicon, 'fanart': addonfanart}}
+    main = [mall_movies, madd_movie, msearch_missing, mget_queue]
     add_entries(main)
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
-def add_show(term=None):
+def add_movie(term=None):
     dialog = xbmcgui.Dialog()
-    term = dialog.input('Add Show', type=xbmcgui.INPUT_ALPHANUM)
+    term = dialog.input('Add Movie', type=xbmcgui.INPUT_ALPHANUM)
     # if user cancels, return
     if not term:
         return -1
     # show lookup
     shows = []
-    data = snr.lookup_series(term)
+    monitored = ''
+    data = snr.lookup_movie(term)
     for show in data:
         shows.append(show['title'])
     if not shows:
         # NOTHING FOUND NOTIFICATION
+        dialog.notification('Sonarr', 'No match was found for the movie "%s"' % term, addonicon, 5000)
         return -1
     # open dialog for choosing show
     dialog = xbmcgui.Dialog()
@@ -61,27 +66,50 @@ def add_show(term=None):
     if ret == -1:
         return -1
     xbmc.log('RET', level=0)
-    xbmc.log(str(ret))
     # open dialog for choosing quality
     quality_profile_id = list_quality_profiles()
     if quality_profile_id == -1:
         return -1
-    tvdbId = data[ret]['tvdbId']
+    tmdbId = data[ret]['tmdbId']
     title = data[ret]['title']
-    #seasons = data['seasons']
+    year = data[ret]['year']
+    titleSlug = data[ret]['titleSlug']
+    images = data[ret]['images']
     data = {
-        'tvdbId': tvdbId,
         'title': title,
+        'year': year,
         'qualityProfileId': quality_profile_id,
+        'titleSlug': titleSlug,
+        'tmdbId': tmdbId,
+        'images': images,
         'rootFolderPath': snr.get_root_folder()[0]['path'],
         # 'titleSlug': '',
         # 'seasons': [],
         'addOptions': {
-            'ignoreEpisodesWithFile': 'true',
-            'ignoreEpisodesWithoutFiles': 'true'
+             'ignoreEpisodesWithFile': 'false',
+             'ignoreEpisodesWithoutFiles': 'false',
+             'searchForMovie': 'true'
         }
     }
-    snr.add_series(data)
+    xbmc.log("DATASENT " + str(data))
+    snr.add_movie(data)
+    dialog.notification('Radarr', 'Added to watchlist: "%s"' % title, addonicon, 5000)
+#    time.sleep(15)
+#    search_missing()
+
+
+
+def search_missing():
+    data = {
+        'name': 'missingMoviesSearch',
+        'filterKey': 'monitored',
+        'filterValue': 'true'
+    }
+    snr.search_missing(data)
+
+
+
+
 
 
 def list_quality_profiles():
@@ -102,16 +130,22 @@ def list_quality_profiles():
     return id
 
 
-def list_shows(data):
+def list_movies(data):
     shows = []
     for show in data:
         name = show['title'].encode('utf-8')
-        thumb = host_url + show['images'][2]['url'] + '&apikey={}'.format(api_key)
+        if vw_miss:
+            down = str(show['downloaded'])
+            if down == 'True':
+                name += ' [COLOR FF3576F9]Downloaded[/COLOR] '
+            else:
+                name += ' [COLOR FFF7290A]Missing[/COLOR] '
+        thumb = host_url + show['images'][-2]['url'] + '&apikey={}'.format(api_key)
         #banner = host_url + show['images'][1]['url'] + '&apikey={}'.format(api_key)
         fanart = host_url + show['images'][0]['url'] + '&apikey={}'.format(api_key)
         show_id = show['id']
-        seasons = show['seasons']
-        dir_show = get_appended_path(dir_shows, str(show_id))
+        seasons = 'na'
+        dir_show = get_appended_path(dir_movies, str(show_id))
         file = 'seasons.json'
         file_path = get_appended_path(dir_show, file)
         write_json(file_path, seasons)
@@ -121,128 +155,54 @@ def list_shows(data):
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
-def list_seasons(show_id):
-    seasons = []
-    #show_id = xbmc.getInfoLabel("ListItem.tvshowtitle")
-    dir_show = get_appended_path(dir_shows, str(show_id))
-    file_db = get_appended_path(dir_show, 'seasons.json')
-    data = read_json(file_db)
-    #show_id = xbmc.getInfoLabel("ListItem.tvshowtitle")
-    for season in data:
-        name = get_season_name(season)
-        season_id = season['seasonNumber']
-        seasons.append({'name': name, 'url': str(show_id), 'season': str(season_id), 'mode': 'getSeason', 'type': 'dir'})
-    add_entries(seasons)
-    xbmcplugin.endOfDirectory(pluginhandle)
-
-
-def list_season(show_id, season_id):
-    xbmc.log("List Season")
-    season = []
-    #show_id = xbmc.getInfoLabel("ListItem.tvshowtitle")
-    #season_id = xbmc.getInfoLabel("ListItem.season")
-    xbmc.log("season_id")
-    xbmc.log(str(season_id))
-    dir_show = get_appended_path(dir_shows, str(show_id))
-    file_db = get_appended_path(dir_show, 'episodes.json')
-    xbmc.log('filedb')
-    xbmc.log(str(file_db))
-    data = read_json(file_db)
-    for episode in data:
-        if str(episode['seasonNumber']) != season_id:
-            continue
-        else:
-            xbmc.log("FOUND")
-            name = get_episode_name(episode)
-            episode = episode['episodeNumber']
-            season.append({'name': name, 'mode': 'end', 'show': str(show_id), 'episode': episode, 'type': 'dir'})
-    add_entries(season)
-    xbmcplugin.endOfDirectory(pluginhandle)
-
-
-def get_episode_name(episode):
-    name = str(episode['seasonNumber']) + 'x'
-    name += str(episode['episodeNumber']).zfill(2)
-    if episode['hasFile']:
-        name += ' [COLOR FF3576F9]%s[/COLOR] ' % episode['title']
-    else:
-        name += ' [COLOR FFF7290A]%s[/COLOR] ' % episode['title']
-    if vw_aired and 'airDate' in episode:
-        name += (' [COLOR FF494545]%s[/COLOR]' % episode['airDate'])
-    return name.encode('utf-8')
-
-
-def get_season_name(season):
-    season_id = season['seasonNumber']
-    name = TRANSLATE(30020)
-    name += str(season_id).zfill(2)
-    # Get percentage
-    if vw_perc:
-        perc = int(season['statistics']['percentOfEpisodes'])
-        if perc == 100:
-            perc = '[COLOR FF3576F9]{}%[/COLOR]'.format(perc)  # blue
-        elif 50 <= perc < 100:
-            perc = '[COLOR FFFA7544]{}%[/COLOR]'.format(perc)  # yellow
-        elif perc < 50:
-            perc = '[COLOR FFF7290A]{}%[/COLOR]'.format(perc)  # red
-        name += ' ' + str(perc)
-    # get episodes counter
-    if vw_total:
-        epi_count = str(season['statistics']['episodeCount'])
-        epi_total_count = str(season['statistics']['totalEpisodeCount'])
-        name += ' {}/{} '.format(epi_count, epi_total_count)
-    # get monitor stats
-    if vw_moni:
-        xbmc.log('VW MONI TRUE')
-        if season['monitored'] == 'false':
-            name += '[COLOR FF494545]%s[/COLOR]' % TRANSLATE(30025)
-        else:
-            name += '[COLOR FF494545]%s[/COLOR]' % TRANSLATE(30026)
-    else:
-        xbmc.log('VW MONI FALSE')
-    return name
-
-'''
-def toggle_monitored():
-    # TODO ?
-    season_id = xbmc.getInfoLabel("ListItem.Season")
-'''
-
-
-def get_show(show_id):
-    list_seasons(show_id)
-    get_all_episodes(show_id)
-
-
-def get_all_shows():
-    data = snr.get_series()
+def get_all_movies():
+    data = snr.get_movies()
     ord_data = sorted(data, key=lambda k: k['title'])   # order titles alphabetically
-    list_shows(ord_data)
+    list_movies(ord_data)
+
+def get_queue():
+    data = snr.get_queue()
+    shows = []
+    for show in data:
+        name = show['movie']['title']
+        thumb = show['movie']['images'][0]['url']
+        fanart = show['movie']['images'][1]['url']
+        totalsize = show['size'] * 1e-9
+        perc = 100 - (100 * float(show['sizeleft'])/float(show['size']))
+        name += '      [COLOR FF3576F9]%s%%[/COLOR] ' % round(perc, 1)
+        name += ' [COLOR FF3576F9]of  %sGB[/COLOR] ' % round(totalsize, 2)
+        show_id = show['id']
+        seasons = 'na'
+        dir_show = get_appended_path(dir_movies, str(show_id))
+        file = 'seasons.json'
+        file_path = get_appended_path(dir_show, file)
+        write_json(file_path, seasons)
+        shows.append({'name': name, 'url': str(show_id), 'mode': 'getShow', 'type': 'dir',
+                      'images': {'thumb': thumb, 'fanart': fanart}})
+    add_entries(shows)
+    xbmcplugin.endOfDirectory(pluginhandle)
 
 
-def get_all_episodes(show_id):
-    data = snr.get_episodes_by_series_id(show_id)
-    dir_show = get_appended_path(dir_shows, str(show_id))
-    file_db = get_appended_path(dir_show, 'episodes.json')
-    write_json(file_db, data)
 
 
 params = parameters_string_to_dict(sys.argv[2])
 mode = params.get('mode')
 url = params.get('url')
 name = params.get('name')
-season = params.get('season')
+
 if type(url) == type(str()):
     url = str(url)
 
 
 if mode == None:
     root()
-if mode == 'getAllShows':
-    get_all_shows()
-elif mode == 'getShow':
-    get_show(url)
-elif mode == 'getSeason':
-    list_season(url, season)
-elif mode == 'addShow':
-    add_show(url)
+if mode == 'getAllMovies':
+    get_all_movies()
+elif mode == 'getMovie':
+    get_movie(url)
+elif mode == 'addMovie':
+    add_movie(url)
+elif mode == 'searchMissing':
+    search_missing()
+elif mode == 'getQueue':
+    get_queue()

@@ -6,10 +6,6 @@
     </category>
 	<category label="30102">
         <setting label="30113" type="lsep"/>
-        <setting label="30131" type="bool" id="view-perc" default="true"/>
-		<setting label="30132" type="bool" id="view-total" default="true"/>
-        <setting label="30133" type="bool" id="view-moni" default="true"/>
-        <setting label="30114" type="lsep"/>
-		<setting label="30141" type="bool" id="view-aired" default="true"/>
+        <setting label="30134" type="bool" id="view-miss" default="true"/>
     </category>
 </settings>

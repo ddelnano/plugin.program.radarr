@@ -18,11 +18,19 @@ msgstr ""
 
 
 msgctxt "#30005"
-msgid "Shows"
+msgid "View Watched List"
 msgstr ""
 
 msgctxt "#30009"
-msgid "Add Show"
+msgid "Add Movie to Watched List"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Search Missing"
+msgstr ""
+
+msgctxt "#30011"
+msgid "Show Currently Downloading Status"
 msgstr ""
 
 msgctxt "#30020"
@@ -73,6 +81,10 @@ msgstr ""
 
 msgctxt "#30133"
 msgid "Show monitor state in name"
+msgstr ""
+
+msgctxt "#30134"
+msgid "Show downloaded/missing state in name"
 msgstr ""
 
 msgctxt "#30141"
